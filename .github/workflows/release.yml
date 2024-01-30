@@ -34,10 +34,10 @@ jobs:
             artifact-name: wally-patch-package-linux
             pkg-target: latest-linux-x64
           - os: macos-latest
-            artifact-name: wally-package-types-macos
+            artifact-name: wally-patch-package-macos
             pkg-target: latest-macos-x64
           - os: macos-latest
-            artifact-name: wally-package-types-macos-aarch64
+            artifact-name: wally-patch-package-macos-aarch64
             pkg-target: latest-macos-arm64
 
     name: Build (${{ matrix.artifact-name }})
@@ -65,11 +65,11 @@ jobs:
           mkdir -p staging
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp "output/release/wally-package-types.exe" staging/
+            cp "output/release/wally-patch-package.exe" staging/
             cd staging
             7z a ../release.zip *
           else
-            cp "output/release/wally-package-types" staging/
+            cp "output/release/wally-patch-package" staging/
             cd staging
             zip ../release.zip *
           fi
