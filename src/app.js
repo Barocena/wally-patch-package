@@ -1,6 +1,6 @@
 import { program } from "commander";
-import { createPatch } from "./createPatch.js";
-import { applyPatch } from "./applyPatch.js";
+import createPatch from "./createPatch.js";
+import applyPatch from "./applyPatch.js";
 
 program
   .name("Wally-Patch-Package")

@@ -1,0 +1,13 @@
+diff --git a/fusion/src/init.lua b/fusion/src/init.lua
+index 79e91d0..50ab530 100644
+--- a/fusion/src/init.lua
++++ b/fusion/src/init.lua
+@@ -4,6 +4,8 @@
+ 	The entry point for the Fusion library.
+ ]]
+ 
++--TEST
++
+ local PubTypes = require(script.PubTypes)
+ local restrictRead = require(script.Utility.restrictRead)
+ 

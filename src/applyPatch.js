@@ -8,7 +8,7 @@ import { fetchPackageInfo, getPackagePath } from "./package.js";
 
 
 // Apply patch
-export async function applyPatch() {
+export default async function applyPatch() {
   const PatchDir = `${process.cwd()}\\WallyPatches`;
 
   if (!fs.existsSync(PatchDir)) {

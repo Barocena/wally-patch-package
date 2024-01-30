@@ -1,6 +1,6 @@
 import fs from "fs";
 import toml from "toml";
-import extract from "extract-zip";
+import AdmZip from "adm-zip";
 import fetch from "node-fetch";
 import { error } from "./utils.js";
 
@@ -88,7 +88,8 @@ export async function downloadPackage(pkgInfo, tempDir) {
     });
   });
   async function unzip(zipPath, dir) {
-    await extract(zipPath, { dir: dir });
+    var zip = new AdmZip(zipPath);
+    zip.extractAllTo(dir, true);
     fs.unlink(zipPath, (err) => {
       if (err) {
         error(err);

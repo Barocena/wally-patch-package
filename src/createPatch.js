@@ -58,7 +58,7 @@ async function createDiff(source, target, patchDir, pkgInfo) {
   });
 }
 
-export async function createPatch(packageName) {
+export default async function createPatch(packageName) {
   console.log(chalk.yellow(`🩹 Creating patch for ${packageName}`));
 
   var pkgInfo = fetchPackageInfo(packageName);

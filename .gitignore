@@ -2,3 +2,5 @@
 node_modules
 Packages
 ServerPackages
+build/**
+bin/**
