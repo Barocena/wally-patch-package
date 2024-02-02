@@ -66,7 +66,7 @@ export default async function createPatch(packageName) {
   var pkgPath = getPackagePath(pkgInfo);
 
   if (!fs.existsSync(pkgPath)) {
-    error("Package not found");
+    error("❌ Package not found");
     process.exit(1);
   }
 
@@ -78,7 +78,7 @@ export default async function createPatch(packageName) {
 
   const tmpPackageDir = `${tempDir}/${pkgInfo.Name}`;
 
-  const PatchDir = `${process.cwd()}\\WallyPatches`;
+  const PatchDir = `${process.cwd()}/WallyPatches`;
 
   if (!fs.existsSync(PatchDir)) {
     fs.mkdirSync(PatchDir);
@@ -95,5 +95,5 @@ export default async function createPatch(packageName) {
     }
   });
 
-  console.log(chalk.green(`💹 Patch created for ${packageName}`));
+  console.log(chalk.green(`💹 Patch created for ${pkgInfo.Name}`));
 }

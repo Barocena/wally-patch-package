@@ -2,7 +2,10 @@ import fs from "fs";
 import toml from "toml";
 import AdmZip from "adm-zip";
 import fetch from "node-fetch";
-import { error } from "./utils.js";
+import { error, log } from "./utils.js";
+import os from "os";
+import { program } from "commander";
+import path from "path";
 
 export function fetchPackageInfo(packageName) {
   const wallyPath = process.cwd() + "/wally.toml";
@@ -10,14 +13,24 @@ export function fetchPackageInfo(packageName) {
     var wallyData = toml.parse(fs.readFileSync(wallyPath));
     var Realm = "";
     var packageData = "";
-    if (wallyData["dependencies"][packageName]) {
-      packageData = wallyData["dependencies"][packageName];
+
+    const dependencies = Object.values(wallyData["dependencies"] || {}).find(
+      (pname) => pname.match(packageName)
+    );
+    const serverdependencies = Object.values(
+      wallyData["server-dependencies"] || {}
+    ).find((pname) => pname.match(packageName));
+
+    if (dependencies) {
+      packageData = dependencies;
       Realm = "Shared";
-    } else if (wallyData["server-dependencies"][packageName]) {
-      packageData = wallyData["server-dependencies"][packageName];
+      log(`found ${packageName} in dependencies`);
+    } else if (serverdependencies) {
+      packageData = serverdependencies;
       Realm = "Server";
+      log(`found ${packageName} in server-dependencies`);
     } else {
-      error("Package not found");
+      error("❌ Package not found");
       process.exit(1);
     }
 
@@ -29,20 +42,25 @@ export function fetchPackageInfo(packageName) {
       ])
     );
   } else {
-    error("Wally.toml not found");
+    error("❌ Wally.toml not found");
     process.exit(1);
   }
 }
 
 export function getPackagePath(pkgInfo) {
   var pkgFolder = pkgInfo.Realm == "Shared" ? "Packages" : "ServerPackages";
-  var pkgPath = `${process.cwd()}\\${pkgFolder}\\_Index\\${pkgInfo.Scope}_${
+  var pkgPath = `${process.cwd()}/${pkgFolder}/_Index/${pkgInfo.Scope}_${
     pkgInfo.Name
-  }@${pkgInfo.Version}\\${pkgInfo.Name}`;
+  }@${pkgInfo.Version}/${pkgInfo.Name}`;
   return pkgPath;
 }
 
 async function fetchRegistryUrl() {
+  var Options = program.opts();
+  if (Options.registry) {
+    return Options.registry;
+  }
+
   var url = "";
   var registryField = toml.parse(
     fs.readFileSync(process.cwd() + "/wally.toml")
@@ -69,6 +87,25 @@ export async function downloadPackage(pkgInfo, tempDir) {
       "Wally-Version": "0.3.2",
     },
   };
+
+  var Options = program.opts();
+
+  if (Options.registry) {
+    const dotWallyPath = path.normalize(os.homedir() + "/.wally/auth.toml");
+    if (!fs.existsSync(dotWallyPath)) {
+      error("❌ Wally config not found");
+      process.exit(1);
+    }
+    var wallyData = toml.parse(fs.readFileSync(dotWallyPath));
+
+    var token = wallyData["tokens"][Options.registry];
+
+    if (!token) {
+      error("❌ Token not found, please login first");
+      process.exit(1);
+    }
+    options.headers["Authorization"] = `Bearer ${token}`;
+  }
 
   var endpoint = await fetchRegistryUrl();
   endpoint += `/v1/package-contents/${pkgInfo.Scope}/${pkgInfo.Name}/${pkgInfo.Version}`;

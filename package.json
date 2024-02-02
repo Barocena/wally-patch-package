@@ -6,7 +6,7 @@
   "bin": "src/app.js",
   "scripts": {
     "transpile": "esbuild --platform=node --bundle --outfile=build/app.js src/app.js",
-    "compile": "pkg --no-bytecode --public --targets latest-win-x64 --public-packages '*' --compress brotli --out-path bin build/app.js",
+    "compile": "pkg --no-bytecode --public --targets latest-win-x64,latest-linux-x64 --public-packages '*' --compress brotli --out-path bin build/app.js",
     "clean": "rimraf build",
     "build": "run-s transpile compile clean"
   },

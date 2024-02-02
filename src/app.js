@@ -15,4 +15,6 @@ program
     }
   })
   .option("-d, --debug", "output extra debugging")
+  .option("--registry <url>", "set the base url of registry")
+  .option("--patch <path>", "apply specific patch file")
   .parse(process.argv);

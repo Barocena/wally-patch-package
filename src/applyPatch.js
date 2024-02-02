@@ -4,19 +4,17 @@ import path from "path";
 import simpleGit from "simple-git";
 import { log, error, capitalizeFirstLetter } from "./utils.js";
 import { fetchPackageInfo, getPackagePath } from "./package.js";
+import { program } from "commander";
 
-
-
-// Apply patch
 export default async function applyPatch() {
-  const PatchDir = `${process.cwd()}\\WallyPatches`;
+  const PatchDir = path.join(process.cwd(), "/WallyPatches");
 
   if (!fs.existsSync(PatchDir)) {
     error("❌ No patches found");
     process.exit(1);
   }
 
-  const patchFiles = fs.readdirSync(PatchDir);
+  var patchFiles = fs.readdirSync(PatchDir);
 
   if (patchFiles.length == 0) {
     error("❌ No patches found");
@@ -25,13 +23,31 @@ export default async function applyPatch() {
 
   var applyCount = 0;
 
+  var Option = program.opts();
+
+  if (Option.patch) {
+    var found = false;
+    for (const patchFile of patchFiles) {
+      if (patchFile.match(Option.patch)) {
+        patchFiles = [patchFile];
+        found = true;
+        continue;
+      }
+    }
+    if (!found) {
+      error("❌ Patch not found");
+      process.exit(1);
+    }
+  }
+
   for (const patchFile of patchFiles) {
-    const patchFilePath = `${PatchDir}\\${patchFile}`;
-    log("🧩 ", patchFile);
+    const patchFilePath = path.join(PatchDir, patchFile);
 
     const git = simpleGit().cwd({ path: process.cwd(), root: true });
 
-    const pkginfo = fetchPackageInfo(patchFile.split("_")[1].split("@")[0]);
+    const pkginfo = fetchPackageInfo(
+      patchFile.split("_")[0] + "/" + patchFile.split("_")[1].split(".p")[0]
+    ); // we give scope/name@version as input to make sure there is no edge case of different scoped  same package name or different version of same package etc..
     const pkgPath = getPackagePath(pkginfo);
 
     const isGitInitialized = await git.checkIsRepo();
@@ -65,7 +81,9 @@ export default async function applyPatch() {
 
     if (alreadyApplied) {
       console.log(
-        `⏩ ${capitalizeFirstLetter(pkginfo.Name)} already applied, skipping`
+        `⏩ ${capitalizeFirstLetter(pkginfo.Name)}@${
+          pkginfo.Version
+        } already applied, skipping`
       );
       continue;
     }
@@ -73,7 +91,6 @@ export default async function applyPatch() {
     await git
       .applyPatch(patchFilePath, {
         "--no-index": null,
-        "-q": null,
         "--verbose": null,
         "--allow-empty": null,
         "--directory": directoryPath, // directory is relative to the .git folder (no absolute path)
@@ -84,7 +101,9 @@ export default async function applyPatch() {
     applyCount += 1;
     console.log(
       chalk.green(
-        `🧩 ${capitalizeFirstLetter(pkginfo.Name)} applied successfully`
+        `🧩 ${capitalizeFirstLetter(pkginfo.Name)}@${
+          pkginfo.Version
+        } applied successfully`
       )
     );
   }
