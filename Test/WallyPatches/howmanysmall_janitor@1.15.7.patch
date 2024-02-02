@@ -1,14 +1,12 @@
 diff --git a/janitor/src/init.lua b/janitor/src/init.lua
-index c88c3a1..8177efe 100644
+index c88c3a1..eb4e517 100644
 --- a/janitor/src/init.lua
 +++ b/janitor/src/init.lua
-@@ -8,6 +8,9 @@
+@@ -7,6 +7,7 @@
+ -- roblox-ts support by OverHash and Validark
  -- LinkToInstance fixed by Elttob.
  -- Cleanup edge cases fixed by codesenseAye.
++-- Did some change 
  
-+
-+-- Edited the janitor library here
-+
  local Promise = if script.Parent:FindFirstChild("Promise") then require(script.Parent.Promise) else nil
  
- local IndicesReference = setmetatable({}, {

@@ -1,0 +1,13 @@
+diff --git a/msgpack-luau/src/msgpack.lua b/msgpack-luau/src/msgpack.lua
+index 31f31c2..e0b9e19 100644
+--- a/msgpack-luau/src/msgpack.lua
++++ b/msgpack-luau/src/msgpack.lua
+@@ -15,7 +15,7 @@ local ssub = string.sub
+ local char = string.char
+ local concat = table.concat
+ local tableCreate = table.create
+-
++-- some edits to the original code
+ local function parse(message: string, offset: number): (any, number)
+   local byte = sbyte(message, offset + 1, offset + 1)
+ 

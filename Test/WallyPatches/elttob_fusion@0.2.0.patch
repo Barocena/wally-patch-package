@@ -1,15 +1,13 @@
 diff --git a/fusion/src/init.lua b/fusion/src/init.lua
-index 79e91d0..6568ce2 100644
+index 79e91d0..9cd3f51 100644
 --- a/fusion/src/init.lua
 +++ b/fusion/src/init.lua
-@@ -2,6 +2,10 @@
+@@ -46,7 +46,7 @@ type Fusion = {
+ }
  
- --[[
- 	The entry point for the Fusion library.
-+	TEST
-+	TEST
-+	TEST
-+	works
- ]]
+ return restrictRead("Fusion", {
+-	version = {major = 0, minor = 2, isRelease = true},
++	version = {major = 1234, minor = 2, isRelease = true}, --did some change to major
  
- local PubTypes = require(script.PubTypes)
+ 	New = require(script.Instances.New),
+ 	Hydrate = require(script.Instances.Hydrate),

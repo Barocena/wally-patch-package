@@ -1,0 +1,13 @@
+diff --git a/fusion/src/Types.lua b/fusion/src/Types.lua
+index 930985c..7330951 100644
+--- a/fusion/src/Types.lua
++++ b/fusion/src/Types.lua
+@@ -7,6 +7,8 @@ export type Set<T> = {[T]: any}
+ export type State<T> = {get: (State<T>) -> T}
+ export type StateOrValue<T> = State<T> | T
+ 
++-- changes in types
++
+ export type Symbol = {
+ 	type: string,
+ 	name: string,

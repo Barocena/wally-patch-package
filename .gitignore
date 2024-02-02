@@ -4,3 +4,4 @@ Packages
 ServerPackages
 build/**
 bin/**
+ignore
