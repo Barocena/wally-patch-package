@@ -4,9 +4,16 @@ version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
+[place]
+shared-packages = "game.ReplicatedStorage.Packages"
+
 [dependencies]
 
 fusion = "elttob/fusion@0.2.0"
+oldfusion = "elttob/fusion@0.1.1-beta"
+
+msgpack = "cipharius/msgpack-luau@0.2.1"
+anyRandomName = "howmanysmall/janitor@1.15.7"
 
 [server-dependencies]
 

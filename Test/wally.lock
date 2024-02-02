@@ -3,6 +3,16 @@
 registry = "test"
 
 [[package]]
+name = "cipharius/msgpack-luau"
+version = "0.2.1"
+dependencies = []
+
+[[package]]
+name = "elttob/fusion"
+version = "0.1.1-beta"
+dependencies = []
+
+[[package]]
 name = "elttob/fusion"
 version = "0.2.0"
 dependencies = []
@@ -13,9 +23,14 @@ version = "4.0.0"
 dependencies = []
 
 [[package]]
+name = "howmanysmall/janitor"
+version = "1.15.7"
+dependencies = [["Promise", "evaera/promise@4.0.0"]]
+
+[[package]]
 name = "msi/testproject"
 version = "0.1.0"
-dependencies = [["fusion", "elttob/fusion@0.2.0"], ["lapis", "nezuo/lapis@0.2.9"]]
+dependencies = [["anyRandomName", "howmanysmall/janitor@1.15.7"], ["fusion", "elttob/fusion@0.2.0"], ["msgpack", "cipharius/msgpack-luau@0.2.1"], ["oldfusion", "elttob/fusion@0.1.1-beta"], ["lapis", "nezuo/lapis@0.2.9"]]
 
 [[package]]
 name = "nezuo/lapis"
