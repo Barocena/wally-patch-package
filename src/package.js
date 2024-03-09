@@ -119,11 +119,13 @@ export async function downloadPackage(pkgInfo, tempDir) {
       reject(err);
     });
 
-    fileStream.on("close", async function () {
-      await unzip(zipPath, `${tempDir}/${pkgInfo.Name}`);
+    fileStream.on("finish", async function () {
       resolve();
     });
+  }).then(async () => {
+    await unzip(zipPath, `${tempDir}/${pkgInfo.Name}`);
   });
+
   async function unzip(zipPath, dir) {
     var zip = new AdmZip(zipPath);
     zip.extractAllTo(dir, true);
