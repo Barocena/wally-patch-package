@@ -46,8 +46,15 @@ export default async function applyPatch() {
     const git = simpleGit().cwd({ path: process.cwd(), root: true });
 
     const pkginfo = fetchPackageInfo(
-      patchFile.split("_")[0] + "/" + patchFile.split("_")[1].split(".p")[0]
+      patchFile.split("_")[0] + "/" + patchFile.split("_")[1].split(".p")[0],
+      true
     ); // we give scope/name@version as input to make sure there is no edge case of different scoped  same package name or different version of same package etc..
+    if (pkginfo == "skip") {
+      console.log(
+        `⏭ ${patchFile.split(".p")[0]} not found, skipping`
+      );
+      continue
+    }
     const pkgPath = getPackagePath(pkginfo);
 
     const isGitInitialized = await git.checkIsRepo();

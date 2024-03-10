@@ -6,7 +6,13 @@ import { error, log } from "./utils.js";
 import os from "os";
 import { program } from "commander";
 import path from "path";
-import {satisfies} from "semver";
+import { satisfies } from "semver";
+
+const dirs = {
+  Shared: "Packages",
+  Server: "ServerPackages",
+  Dev: "DevPackages",
+};
 
 function semverCheck(pkgInfo, pkgPath) {
   const IndexDir = path.join(pkgPath, "../.."); // _Index
@@ -29,7 +35,7 @@ function semverCheck(pkgInfo, pkgPath) {
   return possible == undefined ? false : possible.split("@")[1];
 }
 
-export function fetchPackageInfo(packageName) {
+export function fetchPackageInfo(packageName, dircheck) {
   const wallyPath = process.cwd() + "/wally.toml";
 
   if (!fs.existsSync(wallyPath)) {
@@ -37,36 +43,54 @@ export function fetchPackageInfo(packageName) {
     process.exit(1);
   }
 
-  var wallyData = toml.parse(fs.readFileSync(wallyPath));
   var Realm = "";
   var packageData = "";
+  if (!dircheck) {
+    var wallyData = toml.parse(fs.readFileSync(wallyPath));
+    const dependencies = Object.values(wallyData["dependencies"] || {}).find(
+      (pname) => pname.match(packageName)
+    );
+    const serverdependencies = Object.values(
+      wallyData["server-dependencies"] || {}
+    ).find((pname) => pname.match(packageName));
 
-  const dependencies = Object.values(wallyData["dependencies"] || {}).find(
-    (pname) => pname.match(packageName)
-  );
-  const serverdependencies = Object.values(
-    wallyData["server-dependencies"] || {}
-  ).find((pname) => pname.match(packageName));
+    const devdependencies = Object.values(
+      wallyData["dev-dependencies"] || {}
+    ).find((pname) => pname.match(packageName));
 
-  const devdependencies = Object.values(
-    wallyData["dev-dependencies"] || {}
-  ).find((pname) => pname.match(packageName));
-
-  if (dependencies) {
-    packageData = dependencies;
-    Realm = "Shared";
-    log(`found ${packageName} in dependencies`);
-  } else if (serverdependencies) {
-    packageData = serverdependencies;
-    Realm = "Server";
-    log(`found ${packageName} in server-dependencies`);
-  } else if (devdependencies) {
-    packageData = devdependencies;
-    Realm = "Dev";
-    log(`found ${packageName} in dev-dependencies`);
+    if (dependencies) {
+      packageData = dependencies;
+      Realm = "Shared";
+      log(`🎯 found ${packageName} in dependencies`);
+    } else if (serverdependencies) {
+      packageData = serverdependencies;
+      Realm = "Server";
+      log(`🎯 found ${packageName} in server-dependencies`);
+    } else if (devdependencies) {
+      packageData = devdependencies;
+      Realm = "Dev";
+      log(`🎯 found ${packageName} in dev-dependencies`);
+    } else {
+      error("❌ Package not found", packageName);
+      process.exit(1);
+    }
   } else {
-    error("❌ Package not found");
-    process.exit(1);
+    // direct directory checks for applying to avoid rechecking semver on known version
+    log("📁 Directory check");
+    Object.keys(dirs).forEach(function (key) {
+      var path = `${process.cwd()}/${dirs[key]}/_Index`;
+      var pName = packageName.replace("/", "_");
+      var r = fs.readdirSync(path).filter((n) => n == pName);
+      if (r.length > 0) {
+        log(pName, key, r);
+        Realm = key;
+        packageData = packageName;
+        return;
+      }
+    });
+    if (Realm == "") {
+      return "skip";
+    }
   }
 
   const keys = ["Scope", "Name", "Version", "Realm"];
@@ -92,12 +116,7 @@ export function fetchPackageInfo(packageName) {
 }
 
 export function getPackagePath(pkgInfo) {
-  const dirs = {
-    Shared: "Packages",
-    Server: "ServerPackages",
-    Dev: "DevPackages",
-  };
-  var pkgFolder = dirs[pkgInfo.Realm]
+  var pkgFolder = dirs[pkgInfo.Realm];
   var pkgPath = `${process.cwd()}/${pkgFolder}/_Index/${pkgInfo.Scope}_${
     pkgInfo.Name
   }@${pkgInfo.Version}/${pkgInfo.Name}`;
