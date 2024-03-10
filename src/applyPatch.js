@@ -51,7 +51,7 @@ export default async function applyPatch() {
     ); // we give scope/name@version as input to make sure there is no edge case of different scoped  same package name or different version of same package etc..
     if (pkginfo == "skip") {
       console.log(
-        `⏭ ${patchFile.split(".p")[0]} not found, skipping`
+        `⏭  ${patchFile.split(".p")[0]} not found, skipping`
       );
       continue
     }
