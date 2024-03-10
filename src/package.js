@@ -6,45 +6,81 @@ import { error, log } from "./utils.js";
 import os from "os";
 import { program } from "commander";
 import path from "path";
+import semver from "semver";
+
+function semverCheck(pkgInfo, pkgPath) {
+  const IndexDir = path.join(pkgPath, "../.."); // _Index
+
+  var possible = fs
+    .readdirSync(IndexDir)
+    .filter((n) => n.match(`${pkgInfo.Scope}_${pkgInfo.Name}`))
+    .sort()
+    .filter(function (p) {
+      var v = p.split("@")[1];
+      var pkgV = pkgInfo.Version;
+      if (Number.parseInt(pkgV.charAt(0))) {
+        pkgV = "^" + pkgV; // wally versions are ^X.X.X by default
+      }
+      return semver.satisfies(v, pkgV);
+    })
+    .sort()
+    .reverse()[0];
+
+  return possible == undefined ? false : possible.split("@")[1];
+}
 
 export function fetchPackageInfo(packageName) {
   const wallyPath = process.cwd() + "/wally.toml";
-  if (fs.existsSync(wallyPath)) {
-    var wallyData = toml.parse(fs.readFileSync(wallyPath));
-    var Realm = "";
-    var packageData = "";
 
-    const dependencies = Object.values(wallyData["dependencies"] || {}).find(
-      (pname) => pname.match(packageName)
-    );
-    const serverdependencies = Object.values(
-      wallyData["server-dependencies"] || {}
-    ).find((pname) => pname.match(packageName));
-
-    if (dependencies) {
-      packageData = dependencies;
-      Realm = "Shared";
-      log(`found ${packageName} in dependencies`);
-    } else if (serverdependencies) {
-      packageData = serverdependencies;
-      Realm = "Server";
-      log(`found ${packageName} in server-dependencies`);
-    } else {
-      error("❌ Package not found");
-      process.exit(1);
-    }
-
-    const keys = ["Scope", "Name", "Version", "Realm"];
-    return Object.fromEntries(
-      keys.map((key, index) => [
-        key,
-        index === 3 ? Realm : packageData.split(/\/|@/)[index],
-      ])
-    );
-  } else {
+  if (!fs.existsSync(wallyPath)) {
     error("❌ Wally.toml not found");
     process.exit(1);
   }
+
+  var wallyData = toml.parse(fs.readFileSync(wallyPath));
+  var Realm = "";
+  var packageData = "";
+
+  const dependencies = Object.values(wallyData["dependencies"] || {}).find(
+    (pname) => pname.match(packageName)
+  );
+  const serverdependencies = Object.values(
+    wallyData["server-dependencies"] || {}
+  ).find((pname) => pname.match(packageName));
+
+  if (dependencies) {
+    packageData = dependencies;
+    Realm = "Shared";
+    log(`found ${packageName} in dependencies`);
+  } else if (serverdependencies) {
+    packageData = serverdependencies;
+    Realm = "Server";
+    log(`found ${packageName} in server-dependencies`);
+  } else {
+    error("❌ Package not found");
+    process.exit(1);
+  }
+
+  const keys = ["Scope", "Name", "Version", "Realm"];
+  var result = Object.fromEntries(
+    keys.map((key, index) => [
+      key,
+      index === 3 ? Realm : packageData.split(/\/|@/)[index],
+    ])
+  );
+
+  var pkgPath = getPackagePath(result);
+  if (!fs.existsSync(pkgPath)) {
+    const ver = semverCheck(result, pkgPath);
+    if (ver) {
+      result.Version = ver
+    } else {
+      error("❌ Package version not found")
+      process.exit(1)
+    }
+  }
+
+return result
 }
 
 export function getPackagePath(pkgInfo) {
