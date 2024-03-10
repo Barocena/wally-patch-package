@@ -1,0 +1,12 @@
+diff --git a/smash-framework/src/Boostrapper.client.lua b/smash-framework/src/Boostrapper.client.lua
+index 2477d95..7bf7399 100644
+--- a/smash-framework/src/Boostrapper.client.lua
++++ b/smash-framework/src/Boostrapper.client.lua
+@@ -8,4 +8,4 @@ Strapper:LoadModules(ReplicatedStorage.Client.Controllers:GetChildren(), {
+     afterRequire = Strapper.Loud,
+ })
+ 
+-print("[Boostrapper]: ✅ Client finished loading!")
+\ No newline at end of file
++print("[Boostrapper]: ✅ Client finished loading!!!!!")
+\ No newline at end of file
