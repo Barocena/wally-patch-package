@@ -6,7 +6,7 @@ import { error, log } from "./utils.js";
 import os from "os";
 import { program } from "commander";
 import path from "path";
-import semver from "semver";
+import {satisfies} from "semver";
 
 function semverCheck(pkgInfo, pkgPath) {
   const IndexDir = path.join(pkgPath, "../.."); // _Index
@@ -21,7 +21,7 @@ function semverCheck(pkgInfo, pkgPath) {
       if (Number.parseInt(pkgV.charAt(0))) {
         pkgV = "^" + pkgV; // wally versions are ^X.X.X by default
       }
-      return semver.satisfies(v, pkgV);
+      return satisfies(v, pkgV);
     })
     .sort()
     .reverse()[0];
