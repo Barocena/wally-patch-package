@@ -48,6 +48,10 @@ export function fetchPackageInfo(packageName) {
     wallyData["server-dependencies"] || {}
   ).find((pname) => pname.match(packageName));
 
+  const devdependencies = Object.values(
+    wallyData["dev-dependencies"] || {}
+  ).find((pname) => pname.match(packageName));
+
   if (dependencies) {
     packageData = dependencies;
     Realm = "Shared";
@@ -56,6 +60,10 @@ export function fetchPackageInfo(packageName) {
     packageData = serverdependencies;
     Realm = "Server";
     log(`found ${packageName} in server-dependencies`);
+  } else if (devdependencies) {
+    packageData = devdependencies;
+    Realm = "Dev";
+    log(`found ${packageName} in dev-dependencies`);
   } else {
     error("❌ Package not found");
     process.exit(1);
@@ -73,18 +81,23 @@ export function fetchPackageInfo(packageName) {
   if (!fs.existsSync(pkgPath)) {
     const ver = semverCheck(result, pkgPath);
     if (ver) {
-      result.Version = ver
+      result.Version = ver;
     } else {
-      error("❌ Package version not found")
-      process.exit(1)
+      error("❌ Package version not found");
+      process.exit(1);
     }
   }
 
-return result
+  return result;
 }
 
 export function getPackagePath(pkgInfo) {
-  var pkgFolder = pkgInfo.Realm == "Shared" ? "Packages" : "ServerPackages";
+  const dirs = {
+    Shared: "Packages",
+    Server: "ServerPackages",
+    Dev: "DevPackages",
+  };
+  var pkgFolder = dirs[pkgInfo.Realm]
   var pkgPath = `${process.cwd()}/${pkgFolder}/_Index/${pkgInfo.Scope}_${
     pkgInfo.Name
   }@${pkgInfo.Version}/${pkgInfo.Name}`;
