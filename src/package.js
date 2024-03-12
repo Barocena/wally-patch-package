@@ -80,12 +80,14 @@ export function fetchPackageInfo(packageName, dircheck) {
     Object.keys(dirs).forEach(function (key) {
       var path = `${process.cwd()}/${dirs[key]}/_Index`;
       var pName = packageName.replace("/", "_");
-      var r = fs.readdirSync(path).filter((n) => n == pName);
-      if (r.length > 0) {
-        log(pName, key, r);
-        Realm = key;
-        packageData = packageName;
-        return;
+      if (fs.existsSync(path)) {
+        var r = fs.readdirSync(path).filter((n) => n == pName);
+        if (r.length > 0) {
+          log(pName, key, r);
+          Realm = key;
+          packageData = packageName;
+          return;
+        }
       }
     });
     if (Realm == "") {
