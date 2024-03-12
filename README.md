@@ -14,7 +14,7 @@ wally-patch-package
 
 you can install it via [aftman](https://github.com/LPGhatguy/aftman)
 
-`wally-patch-package="Barocena/wally-patch-package@1.2.0"`
+`wally-patch-package="Barocena/wally-patch-package@1.2.1"`
 
 or
 

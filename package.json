@@ -1,6 +1,6 @@
 {
   "name": "wally-patch-package",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "",
   "main": "src/app.js",
   "bin": "src/app.js",
