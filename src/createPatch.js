@@ -22,6 +22,7 @@ async function createDiff(source, target, patchDir, pkgInfo) {
       .addConfig("--local", "user.name", "wally-patch-package")
       .addConfig("--local", "user.email", "wally@pack.age")
       .addConfig("--local", "core.autocrlf", "false")
+      .addConfig("--local", "commit.gpgsign", "false")
       .add(["-f", source])
       .commit(["--allow-empty", "-m", "init"]);
 
