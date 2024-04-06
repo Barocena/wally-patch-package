@@ -19,9 +19,10 @@ async function createDiff(source, target, patchDir, pkgInfo) {
     await git
       .cwd({ path: path.join(source, "../"), root: true })
       .init()
-      .addConfig("--local", "user.name", "wally-patch-package")
-      .addConfig("--local", "user.email", "wally@pack.age")
-      .addConfig("--local", "core.autocrlf", "false")
+      .addConfig("user.name", "wally-patch-package", false, "local")
+      .addConfig("user.email", "wally@pack.age", false, "local")
+      .addConfig("core.autocrlf", false, false, "local")
+      .addConfig("commit.gpgsign", false, false, "local")
       .add(["-f", source])
       .commit(["--allow-empty", "-m", "init"]);
 
