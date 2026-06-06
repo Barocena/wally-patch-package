@@ -55,7 +55,7 @@ jobs:
 
       - name: Build program
         run: |
-          npm install @yao-pkg/pkg -g
+          npm install @yao-pkg/pkg@6.6.0 -g
           npm run transpile;
           pkg --no-bytecode --public --targets ${{matrix.pkg-target}} --public-packages '*' --compress brotli --out-path bin build/app.js;
           npm run clean;

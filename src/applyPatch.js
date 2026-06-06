@@ -6,8 +6,40 @@ import { log, error, capitalizeFirstLetter } from "./utils.js";
 import { fetchPackageInfo, getPackagePath } from "./package.js";
 import { program } from "commander";
 
+const APPLY_FLAGS = {
+  "--no-index": null,
+  "--ignore-space-change": null,
+  "--verbose": null,
+};
+
+async function getPatchStatus(git, patchFilePath, applyOptions) {
+  const canApply = await git
+    .applyPatch(patchFilePath, { ...applyOptions, "--check": null })
+    .then(() => true)
+    .catch(() => false);
+
+  if (canApply) {
+    return "apply";
+  }
+
+  const alreadyApplied = await git
+    .applyPatch(patchFilePath, {
+      ...applyOptions,
+      "--reverse": null,
+      "--check": null,
+    })
+    .then(() => true)
+    .catch(() => false);
+
+  if (alreadyApplied) {
+    return "skip";
+  }
+
+  return "error";
+}
+
 export default async function applyPatch() {
-  const PatchDir = path.join(process.cwd(), "/WallyPatches");
+  const PatchDir = path.join(process.cwd(), "WallyPatches");
 
   if (!fs.existsSync(PatchDir)) {
     error("❌ No patches found");
@@ -40,77 +72,68 @@ export default async function applyPatch() {
     }
   }
 
+  const git = simpleGit().cwd({ path: process.cwd(), root: true });
+
   for (const patchFile of patchFiles) {
     const patchFilePath = path.join(PatchDir, patchFile);
-
-    const git = simpleGit().cwd({ path: process.cwd(), root: true });
 
     const pkginfo = fetchPackageInfo(
       patchFile.split("_")[0] + "/" + patchFile.split("_")[1].split(".p")[0],
       true
-    ); // we give scope/name@version as input to make sure there is no edge case of different scoped  same package name or different version of same package etc..
+    );
     if (pkginfo == "skip") {
-      console.log(
-        `⏭  ${patchFile.split(".p")[0]} not found, skipping`
-      );
-      continue
+      console.log(`⏭  ${patchFile.split(".p")[0]} not found, skipping`);
+      continue;
     }
     const pkgPath = getPackagePath(pkginfo);
-
-    const isGitInitialized = await git.checkIsRepo();
-    if (!isGitInitialized) {
-      await git.init();
-    }
-    const gitroot = await git.revparse(["--show-toplevel"]);
-
     const directoryPath = path
-      .normalize(path.join(path.relative(gitroot, pkgPath), "../"))
+      .relative(process.cwd(), path.join(pkgPath, "../"))
       .replace(/\\/g, "/");
 
     log("🚗 ", directoryPath);
 
-    git.cwd({ path: path.join(pkgPath, "../"), root: true });
+    const applyOptions = {
+      ...APPLY_FLAGS,
+      "--directory": directoryPath,
+    };
 
-    // check if patch is already applied
-    const alreadyApplied = await git
-      .applyPatch(patchFilePath, {
-        "--check": null,
-        "--verbose": null,
-        "--directory": directoryPath,
-      })
-      .then(() => {
-        return false;
-      })
-      .catch(() => {
-        // patch is already applied
-        return true;
-      });
+    const patchStatus = await getPatchStatus(
+      git,
+      patchFilePath,
+      applyOptions
+    );
 
-    if (alreadyApplied) {
+    if (patchStatus === "skip") {
       console.log(
-        `⏩ ${capitalizeFirstLetter(pkginfo.Name)}@${
-          pkginfo.Version
-        } already applied, skipping`
+        `⏩ ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version} already applied, skipping`
       );
       continue;
     }
 
-    await git
-      .applyPatch(patchFilePath, {
-        "--no-index": null,
-        "--verbose": null,
+    if (patchStatus === "error") {
+      error(
+        `❌ Failed to apply patch for ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version}`
+      );
+      process.exit(1);
+    }
+
+    try {
+      await git.applyPatch(patchFilePath, {
+        ...applyOptions,
         "--allow-empty": null,
-        "--directory": directoryPath, // directory is relative to the .git folder (no absolute path)
-      })
-      .catch((error) => {
-        console.error(error);
       });
+    } catch (applyError) {
+      console.error(applyError);
+      error(
+        `❌ Failed to apply patch for ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version}`
+      );
+      process.exit(1);
+    }
+
     applyCount += 1;
     console.log(
       chalk.green(
-        `🧩 ${capitalizeFirstLetter(pkginfo.Name)}@${
-          pkginfo.Version
-        } applied successfully`
+        `🧩 ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version} applied successfully`
       )
     );
   }

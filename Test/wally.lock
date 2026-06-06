@@ -43,9 +43,14 @@ version = "1.15.7"
 dependencies = [["Promise", "evaera/promise@4.0.0"]]
 
 [[package]]
+name = "jakeywastaken/smartbone-2"
+version = "0.5.2"
+dependencies = []
+
+[[package]]
 name = "msi/testproject"
 version = "0.1.0"
-dependencies = [["anyRandomName", "howmanysmall/janitor@1.15.7"], ["cmdr", "evaera/cmdr@1.12.0"], ["fusion", "elttob/fusion@0.2.0"], ["msgpack", "cipharius/msgpack-luau@0.2.1"], ["oldfusion", "elttob/fusion@0.1.1-beta"], ["lapis", "nezuo/lapis@0.2.9"], ["smash-framework", "fizzyhex/smash-framework@0.1.0"]]
+dependencies = [["anyRandomName", "howmanysmall/janitor@1.15.7"], ["cmdr", "evaera/cmdr@1.12.0"], ["fusion", "elttob/fusion@0.2.0"], ["msgpack", "cipharius/msgpack-luau@0.2.1"], ["oldfusion", "elttob/fusion@0.1.1-beta"], ["smartbone-2", "jakeywastaken/smartbone-2@0.5.2"], ["lapis", "nezuo/lapis@0.2.9"], ["smash-framework", "fizzyhex/smash-framework@0.1.0"]]
 
 [[package]]
 name = "nezuo/lapis"

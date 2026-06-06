@@ -1,0 +1,13 @@
+diff --git a/smartbone-2/src-build/init.luau b/smartbone-2/src-build/init.luau
+index e22169f..0fa929b 100644
+--- a/smartbone-2/src-build/init.luau
++++ b/smartbone-2/src-build/init.luau
+@@ -25,6 +25,8 @@ local function CopyPasteAttributes(Object1: BasePart, Object2: BasePart)
+ 	end
+ end
+ 
++print("Hello World")
++
+ export type IBoneTree = BoneTreeClass.IBoneTree
+ export type IBone = BoneClass.IBone
+ export type IColliderObject = ColliderObjectClass.IColliderObject
