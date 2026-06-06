@@ -6,31 +6,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: true
-  release:
-    needs: ["create-release"]
-
+  build:
     strategy:
       matrix:
         include:
           - os: windows-latest
             artifact-name: wally-patch-package-win64
             pkg-target: latest-win-x64
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             artifact-name: wally-patch-package-linux
             pkg-target: latest-linux-x64
           - os: macos-latest
@@ -45,20 +28,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v4
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install dependencies
         run: npm install
 
       - name: Build program
         run: |
-          npm install @yao-pkg/pkg@6.6.0 -g
-          npm run transpile;
-          pkg --no-bytecode --public --targets ${{matrix.pkg-target}} --public-packages '*' --compress brotli --out-path bin build/app.js;
-          npm run clean;
+          npm run transpile
+          npx pkg --no-bytecode --public --targets ${{ matrix.pkg-target }} --public-packages '*' --compress brotli --out-path bin build/app.js
+          npm run clean
 
       - name: Archive files
         shell: bash
@@ -75,12 +59,30 @@ jobs:
             zip ../release.zip *
           fi
 
-      - name: Upload Binary to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: release.zip
-          asset_name: ${{ matrix.artifact-name }}.zip
-          asset_content_type: application/octet-stream
+          name: ${{ matrix.artifact-name }}
+          path: release.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            artifacts/wally-patch-package-win64/release.zip
+            artifacts/wally-patch-package-linux/release.zip
+            artifacts/wally-patch-package-macos/release.zip
+            artifacts/wally-patch-package-macos-aarch64/release.zip
