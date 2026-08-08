@@ -9,7 +9,7 @@
     "compile": "pkg --no-bytecode --public --targets latest-win-x64,latest-linux-x64 --public-packages '*' --compress brotli --out-path bin build/app.js",
     "clean": "rimraf build",
     "build": "run-s transpile compile clean",
-    "test": "node scripts/test-apply-ci.js"
+    "test": "node scripts/test-apply-ci.js && node scripts/test-package-match.js"
   },
   "keywords": [],
   "author": "",

@@ -4,7 +4,11 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { log, error, capitalizeFirstLetter } from "./utils.js";
-import { fetchPackageInfo, getPackagePath } from "./package.js";
+import {
+  fetchPackageInfo,
+  getPackagePath,
+  patchFileMatchesQuery,
+} from "./package.js";
 import { program } from "commander";
 
 function createBareGitDir() {
@@ -92,18 +96,22 @@ export default function applyPatch() {
   var Option = program.opts();
 
   if (Option.patch) {
-    var found = false;
-    for (const patchFile of patchFiles) {
-      if (patchFile.match(Option.patch)) {
-        patchFiles = [patchFile];
-        found = true;
-        continue;
-      }
-    }
-    if (!found) {
+    const matched = patchFiles.filter((patchFile) =>
+      patchFileMatchesQuery(patchFile, Option.patch)
+    );
+    if (matched.length === 0) {
       error("❌ Patch not found");
       process.exit(1);
     }
+    if (matched.length > 1) {
+      error(
+        "❌ Multiple patches matched",
+        Option.patch + ":",
+        matched.join(", ")
+      );
+      process.exit(1);
+    }
+    patchFiles = matched;
   }
 
   // git apply resolves --directory against the repo work tree, not cwd, and

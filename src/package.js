@@ -14,12 +14,171 @@ const dirs = {
   Dev: "DevPackages",
 };
 
+function parseWallySpec(spec) {
+  if (!spec || typeof spec !== "string") {
+    return null;
+  }
+
+  const slash = spec.indexOf("/");
+  if (slash === -1) {
+    return null;
+  }
+
+  const at = spec.lastIndexOf("@");
+  const hasVersion = at > slash;
+  const scopeName = hasVersion ? spec.slice(0, at) : spec;
+  const scopeSlash = scopeName.indexOf("/");
+  if (scopeSlash === -1) {
+    return null;
+  }
+
+  return {
+    scope: scopeName.slice(0, scopeSlash),
+    name: scopeName.slice(scopeSlash + 1),
+    version: hasVersion ? spec.slice(at + 1) : "",
+    spec,
+  };
+}
+
+export function matchesPackageQuery(query, pkg) {
+  if (!query || !pkg?.name) {
+    return false;
+  }
+
+  const q = String(query).trim();
+  if (!q) {
+    return false;
+  }
+
+  if (pkg.alias && pkg.alias === q) {
+    return true;
+  }
+  if (pkg.name === q) {
+    return true;
+  }
+  if (`${pkg.scope}/${pkg.name}` === q) {
+    return true;
+  }
+  if (pkg.version && `${pkg.scope}/${pkg.name}@${pkg.version}` === q) {
+    return true;
+  }
+  if (pkg.version && `${pkg.scope}_${pkg.name}@${pkg.version}` === q) {
+    return true;
+  }
+  if (pkg.version && `${pkg.scope}_${pkg.name}@${pkg.version}.patch` === q) {
+    return true;
+  }
+  return false;
+}
+
+export function parsePatchFileName(patchFile) {
+  const base = patchFile.endsWith(".patch")
+    ? patchFile.slice(0, -".patch".length)
+    : patchFile;
+  const at = base.lastIndexOf("@");
+  if (at === -1) {
+    return null;
+  }
+
+  const scopeName = base.slice(0, at);
+  const us = scopeName.indexOf("_");
+  if (us === -1) {
+    return null;
+  }
+
+  return {
+    alias: "",
+    scope: scopeName.slice(0, us),
+    name: scopeName.slice(us + 1),
+    version: base.slice(at + 1),
+  };
+}
+
+export function patchFileMatchesQuery(patchFile, query) {
+  if (patchFile === query) {
+    return true;
+  }
+  const parsed = parsePatchFileName(patchFile);
+  return parsed ? matchesPackageQuery(query, parsed) : false;
+}
+
+function listWallyPackages(wallyData) {
+  const realms = [
+    ["dependencies", "Shared"],
+    ["server-dependencies", "Server"],
+    ["dev-dependencies", "Dev"],
+  ];
+
+  const packages = [];
+  for (const [field, realm] of realms) {
+    const deps = wallyData[field] || {};
+    for (const [alias, spec] of Object.entries(deps)) {
+      const parsed = parseWallySpec(spec);
+      if (!parsed) {
+        continue;
+      }
+      packages.push({
+        alias,
+        realm,
+        scope: parsed.scope,
+        name: parsed.name,
+        version: parsed.version,
+        spec: parsed.spec,
+      });
+    }
+  }
+  return packages;
+}
+
+function findWallyPackage(wallyData, query) {
+  const packages = listWallyPackages(wallyData);
+  const q = String(query).trim();
+
+  const aliasHits = packages.filter((pkg) => pkg.alias === q);
+  if (aliasHits.length === 1) {
+    return aliasHits[0];
+  }
+
+  const specHits = packages.filter(
+    (pkg) =>
+      pkg.spec === q ||
+      `${pkg.scope}/${pkg.name}` === q ||
+      `${pkg.scope}/${pkg.name}@${pkg.version}` === q
+  );
+  if (specHits.length === 1) {
+    return specHits[0];
+  }
+  if (specHits.length > 1) {
+    error(
+      "❌ Multiple packages matched",
+      query,
+      specHits.map((pkg) => pkg.spec).join(", ")
+    );
+    process.exit(1);
+  }
+
+  const nameHits = packages.filter((pkg) => pkg.name === q);
+  if (nameHits.length === 1) {
+    return nameHits[0];
+  }
+  if (nameHits.length > 1) {
+    error(
+      "❌ Multiple packages named",
+      query + ":",
+      nameHits.map((pkg) => pkg.spec).join(", ")
+    );
+    process.exit(1);
+  }
+
+  return null;
+}
+
 function semverCheck(pkgInfo, pkgPath) {
   const IndexDir = path.join(pkgPath, "../.."); // _Index
 
   var possible = fs
     .readdirSync(IndexDir)
-    .filter((n) => n.match(`${pkgInfo.Scope}_${pkgInfo.Name}`))
+    .filter((n) => n.startsWith(`${pkgInfo.Scope}_${pkgInfo.Name}@`))
     .sort()
     .filter(function (p) {
       var v = p.split("@")[1];
@@ -47,33 +206,15 @@ export function fetchPackageInfo(packageName, dircheck) {
   var packageData = "";
   if (!dircheck) {
     var wallyData = toml.parse(fs.readFileSync(wallyPath));
-    const dependencies = Object.values(wallyData["dependencies"] || {}).find(
-      (pname) => pname.match(packageName)
-    );
-    const serverdependencies = Object.values(
-      wallyData["server-dependencies"] || {}
-    ).find((pname) => pname.match(packageName));
-
-    const devdependencies = Object.values(
-      wallyData["dev-dependencies"] || {}
-    ).find((pname) => pname.match(packageName));
-
-    if (dependencies) {
-      packageData = dependencies;
-      Realm = "Shared";
-      log(`🎯 found ${packageName} in dependencies`);
-    } else if (serverdependencies) {
-      packageData = serverdependencies;
-      Realm = "Server";
-      log(`🎯 found ${packageName} in server-dependencies`);
-    } else if (devdependencies) {
-      packageData = devdependencies;
-      Realm = "Dev";
-      log(`🎯 found ${packageName} in dev-dependencies`);
-    } else {
+    const found = findWallyPackage(wallyData, packageName);
+    if (!found) {
       error("❌ Package not found", packageName);
       process.exit(1);
     }
+
+    packageData = found.spec;
+    Realm = found.realm;
+    log(`🎯 found ${packageName} in ${found.alias} (${found.spec})`);
   } else {
     // direct directory checks for applying to avoid rechecking semver on known version
     log("📁 Directory check");

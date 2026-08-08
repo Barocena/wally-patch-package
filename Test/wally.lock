@@ -3,6 +3,11 @@
 registry = "test"
 
 [[package]]
+name = "centau/vide"
+version = "0.4.1"
+dependencies = []
+
+[[package]]
 name = "cipharius/msgpack-luau"
 version = "0.2.1"
 dependencies = []
@@ -48,9 +53,19 @@ version = "0.5.2"
 dependencies = []
 
 [[package]]
+name = "littensy/charm"
+version = "0.11.0"
+dependencies = []
+
+[[package]]
+name = "littensy/vide-charm"
+version = "0.4.0"
+dependencies = [["Charm", "littensy/charm@0.11.0"], ["Vide", "centau/vide@0.4.1"]]
+
+[[package]]
 name = "msi/testproject"
 version = "0.1.0"
-dependencies = [["anyRandomName", "howmanysmall/janitor@1.15.7"], ["cmdr", "evaera/cmdr@1.12.0"], ["fusion", "elttob/fusion@0.2.0"], ["msgpack", "cipharius/msgpack-luau@0.2.1"], ["oldfusion", "elttob/fusion@0.1.1-beta"], ["smartbone-2", "jakeywastaken/smartbone-2@0.5.2"], ["lapis", "nezuo/lapis@0.2.9"], ["smash-framework", "fizzyhex/smash-framework@0.1.0"]]
+dependencies = [["anyRandomName", "howmanysmall/janitor@1.15.7"], ["cmdr", "evaera/cmdr@1.12.0"], ["fusion", "elttob/fusion@0.2.0"], ["msgpack", "cipharius/msgpack-luau@0.2.1"], ["oldfusion", "elttob/fusion@0.1.1-beta"], ["smartbone-2", "jakeywastaken/smartbone-2@0.5.2"], ["vide", "centau/vide@0.4.1"], ["vide-charm", "littensy/vide-charm@0.4.0"], ["lapis", "nezuo/lapis@0.2.9"], ["smash-framework", "fizzyhex/smash-framework@0.1.0"]]
 
 [[package]]
 name = "nezuo/lapis"

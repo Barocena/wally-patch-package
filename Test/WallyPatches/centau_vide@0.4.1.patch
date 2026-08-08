@@ -1,0 +1,11 @@
+diff --git a/vide/init.luau b/vide/init.luau
+index fcd8183..3f74eaa 100644
+--- a/vide/init.luau
++++ b/vide/init.luau
+@@ -4,5 +4,5 @@ export type source<T> = vide.source<T>
+ export type Source<T> = vide.Source<T>
+ export type context<T> = vide.context<T>
+ export type Context<T> = vide.Context<T>
+-
++warn("vide patched")
+ return vide
