@@ -18,4 +18,7 @@ program
   .option("--registry <url>", "set the base url of registry")
   .option("--patch <path>", "apply specific patch file");
 
-await program.parseAsync(process.argv);
+program.parseAsync(process.argv).catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
