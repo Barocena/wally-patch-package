@@ -7,14 +7,15 @@ program
   .version("1.2.2")
   .description("CLI tool for patching Wally packages")
   .arguments("[libraryname]")
-  .action((libraryname) => {
+  .action(async (libraryname) => {
     if (libraryname) {
-      createPatch(libraryname);
+      await createPatch(libraryname);
     } else {
-      applyPatch();
+      await applyPatch();
     }
   })
   .option("-d, --debug", "output extra debugging")
   .option("--registry <url>", "set the base url of registry")
-  .option("--patch <path>", "apply specific patch file")
-  .parse(process.argv);
+  .option("--patch <path>", "apply specific patch file");
+
+await program.parseAsync(process.argv);

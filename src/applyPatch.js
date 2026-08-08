@@ -1,52 +1,78 @@
 import chalk from "chalk";
+import { execFileSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import simpleGit from "simple-git";
 import { log, error, capitalizeFirstLetter } from "./utils.js";
 import { fetchPackageInfo, getPackagePath } from "./package.js";
 import { program } from "commander";
 
-function getApplyFlags() {
-  const flags = {
-    "--no-index": null,
-    "--ignore-space-change": null,
-  };
+function createBareGitDir() {
+  const fakeGitDir = fs.mkdtempSync(path.join(os.tmpdir(), "wpp-git-"));
+  execFileSync("git", ["init", "--bare", "--quiet"], {
+    cwd: fakeGitDir,
+    stdio: "ignore",
+  });
+  return fakeGitDir;
+}
+
+function runGitApply({ workTree, gitDir, patchFilePath, extraArgs = [] }) {
+  const args = [
+    "-c",
+    "core.autocrlf=false",
+    "-c",
+    "safe.directory=*",
+    `--git-dir=${gitDir}`,
+    `--work-tree=${workTree}`,
+    "apply",
+    "--ignore-whitespace",
+    ...extraArgs,
+    patchFilePath,
+  ];
 
   if (program.opts().debug) {
-    flags["--verbose"] = null;
+    args.splice(args.indexOf("apply") + 1, 0, "--verbose");
   }
 
-  return flags;
+  try {
+    const result = execFileSync("git", args, {
+      cwd: workTree,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    if (result) {
+      log(result);
+    }
+    return { ok: true };
+  } catch (err) {
+    const stderr = String(err.stderr || err.message || err);
+    return { ok: false, stderr };
+  }
 }
 
-async function getPatchStatus(git, patchFilePath, applyOptions) {
-  const canApply = await git
-    .applyPatch(patchFilePath, { ...applyOptions, "--check": null })
-    .then(() => true)
-    .catch(() => false);
+function getPatchStatus(applyArgs) {
+  const canApply = runGitApply({
+    ...applyArgs,
+    extraArgs: [...applyArgs.extraArgs, "--check"],
+  });
 
-  if (canApply) {
-    return "apply";
+  if (canApply.ok) {
+    return { status: "apply" };
   }
 
-  const alreadyApplied = await git
-    .applyPatch(patchFilePath, {
-      ...applyOptions,
-      "--reverse": null,
-      "--check": null,
-    })
-    .then(() => true)
-    .catch(() => false);
+  const alreadyApplied = runGitApply({
+    ...applyArgs,
+    extraArgs: [...applyArgs.extraArgs, "--reverse", "--check"],
+  });
 
-  if (alreadyApplied) {
-    return "skip";
+  if (alreadyApplied.ok) {
+    return { status: "skip" };
   }
 
-  return "error";
+  return { status: "error", stderr: canApply.stderr };
 }
 
-export default async function applyPatch() {
+export default function applyPatch() {
   const PatchDir = path.join(process.cwd(), "WallyPatches");
 
   if (!fs.existsSync(PatchDir)) {
@@ -80,13 +106,11 @@ export default async function applyPatch() {
     }
   }
 
-  // git apply silently skips gitignored paths when run inside a repository.
-  // Packages/ is gitignored here, so use a detached GIT_DIR to apply to disk.
-  const fakeGitDir = fs.mkdtempSync(path.join(os.tmpdir(), "wpp-git-"));
-  const previousGitDir = process.env.GIT_DIR;
-  process.env.GIT_DIR = fakeGitDir;
-
-  const git = simpleGit().cwd({ path: process.cwd(), root: true });
+  // git apply resolves --directory against the repo work tree, not cwd, and
+  // can silently skip patches when run inside a checkout (typical in CI).
+  // Use a throwaway repo whose work tree is the project directory.
+  const workTree = process.cwd();
+  const fakeGitDir = createBareGitDir();
 
   try {
     for (const patchFile of patchFiles) {
@@ -102,40 +126,40 @@ export default async function applyPatch() {
       }
       const pkgPath = getPackagePath(pkginfo);
       const directoryPath = path
-        .relative(process.cwd(), path.join(pkgPath, "../"))
+        .relative(workTree, path.join(pkgPath, "../"))
         .replace(/\\/g, "/");
 
       log("🚗 ", directoryPath);
 
-      const applyOptions = {
-        ...getApplyFlags(),
-        "--directory": directoryPath,
+      const applyArgs = {
+        workTree,
+        gitDir: fakeGitDir,
+        patchFilePath,
+        extraArgs: [`--directory=${directoryPath}`],
       };
 
-      const patchStatus = await getPatchStatus(
-        git,
-        patchFilePath,
-        applyOptions
-      );
+      const patchStatus = getPatchStatus(applyArgs);
 
-      if (patchStatus === "skip") {
+      if (patchStatus.status === "skip") {
         console.log(
           `⏩ ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version} already applied, skipping`
         );
         continue;
       }
 
-      if (patchStatus === "error") {
+      if (patchStatus.status === "error") {
+        if (patchStatus.stderr) {
+          console.error(patchStatus.stderr);
+        }
         error(
           `❌ Failed to apply patch for ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version}`
         );
         process.exit(1);
       }
 
-      try {
-        await git.applyPatch(patchFilePath, applyOptions);
-      } catch (applyError) {
-        console.error(applyError);
+      const applied = runGitApply(applyArgs);
+      if (!applied.ok) {
+        console.error(applied.stderr);
         error(
           `❌ Failed to apply patch for ${capitalizeFirstLetter(pkginfo.Name)}@${pkginfo.Version}`
         );
@@ -152,11 +176,6 @@ export default async function applyPatch() {
 
     console.log(chalk.green(`🧩 ${applyCount} Patch applied`));
   } finally {
-    if (previousGitDir === undefined) {
-      delete process.env.GIT_DIR;
-    } else {
-      process.env.GIT_DIR = previousGitDir;
-    }
     fs.rmSync(fakeGitDir, { recursive: true, force: true });
   }
 }
